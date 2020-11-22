@@ -17,9 +17,12 @@ from torch.autograd import Variable
 
 import models
 from collections import OrderedDict, Counter
-from load_data import load_data_subset
+from load_data import load_data_subset, TrainDataset
 from logger import plotting, copy_script_to_folder, AverageMeter, RecorderMeter, time_string, convert_secs2time
 
+### l2 norm korte hobe input images k
+### fc er aage l2 normkorte hobe
+### bias false
 
 model_names = sorted(name for name in models.__dict__
   if name.islower() and not name.startswith("__")
@@ -47,7 +50,7 @@ parser.add_argument('--valid_labels_per_class', type=int, default=0, metavar='NL
 # Model
 parser.add_argument('--arch', metavar='ARCH', default='wrn28_10', choices=model_names, help='model architecture: ' + ' | '.join(model_names) + ' (default: wrn28_10)')
 parser.add_argument('--initial_channels', type=int, default=64, choices=(16,64))
-
+parser.add_argument('--initial_weights', type=str, default="kaiming", choices=("kaiming", "xavier", "eigen_2", "eigen_3"))
 # Optimization options
 parser.add_argument('--epochs', type=int, default=300, help='number of epochs to train')
 parser.add_argument('--train', type=str, default='vanilla', choices=['vanilla', 'mixup', 'mixup_hidden'], help='mixup layer')
@@ -422,7 +425,6 @@ def main():
     # dataloader
     train_loader, valid_loader, _ , test_loader, num_classes = load_data_subset(args.batch_size, 2 ,args.dataset, args.data_dir, 
                 labels_per_class=args.labels_per_class, valid_labels_per_class=args.valid_labels_per_class, mixup_alpha=args.mixup_alpha)
-    
     if args.dataset == 'tiny-imagenet-200':
         stride = 2 
         args.mean = torch.tensor([0.5] * 3, dtype=torch.float32).view(1,3,1,1).cuda()
