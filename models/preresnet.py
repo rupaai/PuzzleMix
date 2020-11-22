@@ -63,7 +63,7 @@ class PreActBottleneck(nn.Module):
 
 
 class PreActResNet(nn.Module):
-    def __init__(self, block, num_blocks, initial_channels, num_classes, stride=1):
+    def __init__(self, block, num_blocks, initial_channels, num_classes, stride=1, weight_type=None):
         super(PreActResNet, self).__init__()
         self.in_planes = initial_channels
         self.num_classes = num_classes
@@ -128,8 +128,10 @@ class PreActResNet(nn.Module):
         if  layer_mix == 3:
             out, target_reweighted = mixup_process(out, target_reweighted, args=args, hidden=True)
         out = self.layer4(out)
-        out = F.avg_pool2d(out, 4)
+        out = F.avg_pool2d(out, out.shape[-1])
         out = out.view(out.size(0), -1)
+        if self.weight_type is not None:
+            out = F.normalize(out, p=2, dim=1)
         out = self.linear(out)
         
         if target is not None:
@@ -138,8 +140,8 @@ class PreActResNet(nn.Module):
             return out
 
 
-def preactresnet18(num_classes=10, dropout = False, stride=1):
-    return PreActResNet(PreActBlock, [2,2,2,2], 64, num_classes, stride= stride)
+def preactresnet18(num_classes=10, dropout = False, stride=1, weight_type=None):
+    return PreActResNet(PreActBlock, [2,2,2,2], 64, num_classes, stride= stride, weight_type=weight_type)
 
 def preactresnet34(num_classes=10, dropout = False, stride=1):
     return PreActResNet(PreActBlock, [3,4,6,3], 64, num_classes, stride= stride)

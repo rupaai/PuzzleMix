@@ -445,9 +445,15 @@ def main():
         
     # create model 
     print_log("=> creating model '{}'".format(args.arch), log)
-    net = models.__dict__[args.arch](num_classes, args.dropout, stride).cuda()
+    if args.initial_weights.startswith("eigen"):
+        weight_type = "eigen"
+    else:
+        weight_type = None
+    net = models.__dict__[args.arch](num_classes, args.dropout, stride, weight_type).cuda()
     args.num_classes = num_classes
-
+    if args.initial_weights.startswith("eigen"):
+        weights = torch.load(f"eigen_weights/{args.initial_weights}.pth")
+        net.load_state_dict(weights)
     net = torch.nn.DataParallel(net, device_ids=list(range(args.ngpu)))
     optimizer = torch.optim.SGD(net.parameters(), state['learning_rate'], momentum=state['momentum'],
                 weight_decay=state['decay'], nesterov=True)
